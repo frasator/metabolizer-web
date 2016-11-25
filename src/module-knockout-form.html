@@ -1,0 +1,334 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<dom-module id="module-knockout-form">
+    <style is="custom-style" include="iron-flex iron-flex-reverse iron-flex-alignment iron-flex-factors iron-positioning"></style>
+    <style>
+         :host {
+            display: block;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        #form {
+            margin: 0px auto 0px auto;
+            max-width: 1000px;
+            padding: 30px 25px 40px 25px;
+            border: 1px solid #c6d0da;
+            background-color: #FFFFFF;
+            box-shadow: 2px 6px 15px 8px rgba(0, 0, 0, 0.30);
+            background-color: #f5f5f5;
+        }
+
+        #title {
+            text-align: center;
+            color: var(--secondary-text-color);
+            font-weight: 300;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            text-align: center;
+        }
+
+        #tissue {
+            overflow-y: scroll;
+            height: 200px;
+            border: 1px solid var(--divider-color);
+            background-color: var(--light-primary-color);
+            padding: 5px;
+        }
+
+        #pathwaysContent {
+            height: 300px;
+        }
+
+        stv-select-box {
+            width: 300px;
+            height: 150px;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        .key {
+            color: var(--secondary-text-color);
+        }
+
+        .button {
+            height: auto;
+            font-size: 18px;
+            border-radius: 5px;
+            background-color: var(--dark-button-color);
+            color: var(--text-primary-color);
+        }
+
+        .button:hover {
+            background-color: var(--light-button-color);
+        }
+    </style>
+    <template>
+        <form id="form" class="">
+
+            <div id="title">
+                Module Knockout
+            </div>
+
+            <!-- INPUT DATA -->
+            <stv-form-box>
+                <div class="header">
+                    Input data
+                </div>
+                <div class="container">
+                    <stv-file-origin id="exp_file" selection-mode="file" bioformats="{{matrixBioformat}}" user-data="{{userData}}" on-ok-click="checkExpFile">
+                    </stv-file-origin>
+
+                </div>
+            </stv-form-box>
+
+            <!-- DESIGN DATA -->
+            <stv-form-box>
+                <div class="header">
+                    Design data
+                </div>
+                <div class="container">
+                    <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
+                    </stv-file-origin>
+
+                    <div style="padding:5px 0 0 5px;">
+                        <label class="stv">Expression matrix file samples:</label>
+                        <stv-select-box id="sampleSelect" options="{{inputSamples}}" title-attribute="text" enable-filter></stv-select-box>
+                    </div>
+                </div>
+            </stv-form-box>
+
+            <!-- SPECIES -->
+            <stv-form-box>
+                <div class="header">
+                    Species
+                </div>
+                <div class="container horizontal layout center">
+                    <div>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="hsa" checked="true">
+                            <span>Human (Homo sapiens)</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="mmu">
+                            <span>Mouse (Mus musculus)</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="rno">
+                            <span>Rat (Rattus norvegicus)</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="dre">
+                            <span>Zebrafish (Danio rerio) </span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="dme">
+                            <span>Fruit fly (Drosophila melanogaster) </span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="species" value="cel">
+                            <span>Worm (Caenorhabditis elegans) </span>
+                        </label>
+                    </div>
+                </div>
+            </stv-form-box>
+
+            <stv-form-box>
+                <div class="header">
+                    Job information
+                </div>
+                <div class="container">
+                    <div>Output folder: &nbsp;
+                        <stv-file-origin id="output_folder" selection-mode="folder" bioformats="{{bioformats}}" user-data="{{userData}}">
+                        </stv-file-origin>
+                        <span id="output_folderError" class="errmsg"></span>
+                    </div>
+                    <br>
+                    <label class="stv">Job name:</label>
+                    <input type="text" id="jobName" class="stv" style="width:200px;" value="Module knockout" />
+                    <label class="stv">Description:</label>
+                    <textarea id="jobDescription" class="stv" style="width:200px;"></textarea>
+                </div>
+            </stv-form-box>
+            <div class="horizontal layout center-justified">
+                <div class="stv-btn stv-btn-shdw stv-btn-big button" on-click="launchJob"><i class="fa fa-rocket"></i> &nbsp; Launch Job</div>
+            </div>
+        </form>
+    </template>
+
+    <script>
+        Polymer({
+            is: "module-knockout-form",
+            behaviors: [StvFormBehaviour],
+            properties: {
+                designConditions: {
+                    type: Array
+                },
+                matrixBioformat: {
+                    type: Array,
+                    value: [BIOFORMATS["DATAMATRIX_EXPRESSION"]]
+                },
+                designBioformat: {
+                    type: Array,
+                    value: [BIOFORMATS["EXPERIMENTAL_DESIGN"]]
+                }
+            },
+            clean: function() {
+                this.clearAllErrors();
+                this.$.jobName.value = "Module knockout";
+                this.$.jobDescription.value = "";
+                this.$.exp_file.reset();
+                this.$.design_file.reset();
+                this.$.output_folder.reset();
+                this.set('inputSamples', []);
+                this.$.sampleSelect.selected = null;
+                this.$.form.elements['species'].value = 'hsa';
+            },
+            _getSamplesFromDesignFile: function(fileId) {
+                var me = this;
+                SteviaManager.getFileContent(fileId, function(content) {
+                    var conditionArray = [];
+                    var line, fields, field;
+                    var lines = content.split('\n');
+                    var isNumber;
+                    if (lines.length > 0) {
+                        for (var i = 0; i < lines.length; i++) {
+                            line = lines[i];
+                            if (line != '') {
+                                fields = line.split('\t');
+                                conditionArray.push({
+                                    text: fields[0] + ' - ' + fields[1],
+                                    sample: fields[0],
+                                });
+                            }
+                        }
+                    }
+                    me.set('inputSamples', conditionArray);
+                });
+            },
+            launchJob: function() {
+                var me = this;
+                this.clearAllErrors();
+                var query = {
+                    sid: Cookies("bioinfo_sid"),
+                    name: this.$.jobName.value,
+                    description: this.$.jobDescription.value
+                };
+                if (this.$.output_folder.selectedFile != null) {
+                    query.outdirId = this.$.output_folder.selectedFile._id;
+                }
+                var args = {
+                    tool: 'midas',
+                    execution: 'module-knockout-init',
+                    executable: 'module-knockout-init.sh',
+                    options: {
+                        "output_folder": {
+                            out: true,
+                        }
+                    }
+                };
+
+                if (this.$.exp_file.selectedFile == null) {
+                    this.setError(this.$.exp_file, 'No expression matrix file selected');
+                } else {
+                    args.options['exp_file'] = {
+                        type: 'file',
+                        mode: 'id',
+                        value: this.$.exp_file.selectedFile._id
+                    };
+                }
+                args.options['species'] = {
+                    type: 'text',
+                    value: this.$.form.elements['species'].value
+                };
+
+                if (this.$.sampleSelect.selected == null) {
+                    this.setError(this.$.sampleSelect, 'No sample selected.');
+                } else {
+                    args.options['sample'] = {
+                        type: 'text',
+                        value: this.$.sampleSelect.selected.sample
+                    };
+                }
+                if (this.hasErrors == false && this.$.form.checkValidity()) {
+                    console.log('Launching');
+                    // return;
+                    me._createJob(query, args);
+                }
+            },
+            _createJob: function(query, args) {
+                var me = this;
+                SteviaManager.jobs.create({
+                    query: query,
+                    request: {
+                        method: 'POST',
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(args),
+                        success: function(response) {
+                            if (response.response[0].error == null) {
+                                console.log(response);
+                                // var job = response.response[0].result[0];
+                                // console.log(job);
+                                me.clean();
+                                me.fire('job-launched');
+                                me.fire('need-refresh');
+                                //                                    me.message = job.commandLine;
+                            } else {
+                                console.log('PathAct form: Server error, try again later.');
+                            }
+                        },
+                        error: function() {
+                            console.log('PathAct form: Server error, try again later.');
+                        }
+                    }
+                });
+            },
+            // handleLoadExample: function() {
+            //     var me = this;
+            //     var query = {
+            //         name: 'Example',
+            //         description: ''
+            //     };
+            //     var args = {
+            //         tool: 'hipathia',
+            //         execution: 'pathact-init',
+            //         executable: 'pathact-init.sh',
+            //         options: {
+            //             "working_folder": {
+            //                 out: true,
+            //             },
+            //             "verbose": {
+            //                 type: 'flag'
+            //             },
+            //             "exp_file": {
+            //                 "type": "file",
+            //                 "mode": "example",
+            //                 "value": "brca_genes_vals_bn.txt"
+            //             },
+            //             "sample": {
+            //                 "type": "text",
+            //                 "value": "TCGA.EW.A1OV.01A.11R.A144.07"
+            //             },
+            //             "log": {
+            //                 "type": "flag"
+            //             }
+            //         }
+            //     };
+            //     this._createJob(query, args);
+            // },
+            checkDesignFile: function(e) {
+                var file = e.currentTarget.selectedFile;
+                this._getSamplesFromDesignFile(file._id);
+            }
+        });
+    </script>
+</dom-module>
