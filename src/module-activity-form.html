@@ -194,6 +194,9 @@
                 var file = e.currentTarget.selectedFile;
                 this._getConditionsFromDesignFile(file._id);
             },
+            checkExpFile: function(e) {
+                
+            },
             _getConditionsFromDesignFile: function(fileId) {
                 var me = this;
                 SteviaManager.getFileContent(fileId, function(content) {

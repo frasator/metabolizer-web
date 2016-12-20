@@ -114,6 +114,17 @@
             height: calc(100vh - 60px);
             overflow-y: auto;
         }
+
+        #context {
+            position: fixed;
+            top: 0;
+            left: 0;
+            /*width: 200px;*/
+            box-shadow: 2px 2px 16px 2px rgba(125, 125, 125, 0.5);
+            background-color: var(--light-primary-color);
+            border: 1px solid var(--divider-color);
+            padding: 10px 10px 10px 10px;
+        }
     </style>
     <template>
 
@@ -130,7 +141,8 @@
             <module-prediction-form id="modulePrediction" bioformats="{{bioformats}}" user-data="{{userData}}" on-job-launched="handleJobLaunched" on-jobselect="handleJobSelect"></module-prediction-form>
         </div>
         <div id="jobContent" class="content" menu-option="job">
-            <stv-report id="report"></stv-report>
+            <stv-report id="report" on-select-category="handleSelectCategory" on-select-circuit="handleSelectCircuit"></stv-report>
+            <div id="context" hidden></div>
         </div>
         <div class="content" menu-option="home,form,job,module-activity,module-knockout,module-prediction">
             <stv-panel id="fileBrowserPanel" hidden collapsible movable closable expandible resizable on-hidden="handlePanelHidden">
@@ -144,7 +156,7 @@
                 <div class="header">
                     <i class="fa fa-flask"></i>&nbsp; Browse my jobs
                 </div>
-                <stv-job-browser id="jobBrowser" class="container flex" on-jobselect="handleJobSelect" allowed-tools="{{allowedTools}}" user-data="{{userData}}" disable-relaunch="{{disableRelaunch}}" hide-status-filter="{{hideStatusFilter}}" hide-tool-filter="{{hideToolFilter}}">
+                <stv-job-browser id="jobBrowser" class="container flex" on-jobselect="handleJobSelect" allowed-tools="{{allowedTools}}" user-data="{{userData}}" disable-relaunch="{{disableRelaunch}}">
                 </stv-job-browser>
             </stv-panel>
             <stv-feedback id="feedback" hidden on-feedbackend="handleFeedback"></stv-feedback>
@@ -156,7 +168,7 @@
                 <img src="images/Leaf_icon_03.svg" style="height: 54px;margin: 8px 3px 0 0;">
             </div>
             <div class="title horizontal layout center" style="margin-left:15px;">
-                <span style="font-weight:normal;">Midas</span>
+                <span style="font-weight:normal;">Metabolizer</span>
             </div>
             <span id="description" class="description">
                 Metabolic Module Analysis
@@ -254,7 +266,48 @@
             },
             ready: function() {
                 var me = this;
-                this.selectedOption = "home";
+                this.$.report.addEventListener('leftclickvertex', function(e) {
+                    me.hideContext();
+                    if (e.target.tagName == 'PATHWAY-DRUG-VIEWER') {
+                        var pdv = e.target;
+                        var pv = pdv.$.pathwayViewer;
+                        var v = e.detail.vertex;
+                        var att = v.attributes;
+                        var isModule = false;
+                        for (var j = 0; j < pv.circuits.length; j++) {
+                            c = pv.circuits[j];
+                            if (att[c.id] == "1") {
+                                isModule = true;
+                                break;
+                            }
+                        }
+                        if (isModule && v.id.indexOf("_func") == -1 && v.attributes.shape != "circle") {
+                            pdv._showKoControl(e.detail.x, e.detail.y);
+                        } else {
+                            pdv._hideKoControl();
+                        }
+                    }
+                });
+                this.$.report.addEventListener('rightclickvertex', function(e) {
+                    var v = e.detail.vertex;
+                    me.$.context.style.left = e.detail.x + 'px';
+                    me.$.context.style.top = e.detail.y + 'px';
+
+                    var aux = ['<b>Name</b>:<br>',
+                        '<a target="_blank" href="', v.attributes['KEGGLink'], '">',
+                        v.attributes['KEGGinfo'], ' <i class="fa fa-external-link"></i></a>'
+                    ];
+                    if (v.attributes['KEGGenzyme'] != 'Not available') {
+                        aux.push('<br><br><b>Enzyme</b>:<br>',
+                            '<a target="_blank" href="', v.attributes['KEGGenzymeLink'], '">',
+                            v.attributes['KEGGenzyme'], ' <i class="fa fa-external-link"></i></a>');
+                    }
+                    me.$.context.innerHTML = aux.join('');
+                    me.$.context.removeAttribute('hidden');
+                });
+                this.$.report.addEventListener('selectback', function(e) {
+                    me.hideContext();
+                });
             },
             handleJobLaunched: function() {
 
@@ -276,7 +329,7 @@
             },
             handleLogin: function() {
                 if (Cookies('bioinfo_user').indexOf("anonymous___") != -1) {
-                    this.setMenu('home');
+                    this.setMenu('module-activity');
                 } else {
                     this.setMenu('home');
                 }
@@ -286,8 +339,96 @@
                 this.$.home.isLogged = false;
                 this.setMenu('home');
             },
+            handleHomeStart: function() {
+                if (this.$.stvHeader.isLogged != true) {
+                    this.$.stvHeader.anonymousSign();
+                } else {
+                    this.setMenu('module-activity');
+                }
+            },
             handleFeedback: function() {
                 this.$.feedback.hidden = !this.$.feedback.hidden;
+            },
+
+            handleSelectCategory: function(e) {
+                if (e.target.tagName == 'PATHWAY-VIEWER') {
+                    var pv = e.target;
+                    this._applyModuleOpacity(pv);
+                }
+                if (e.target.tagName == 'PATHWAY-DRUG-VIEWER') {
+                    var pdv = e.target;
+                    var pv = pdv.$.pathwayViewer;
+                    this._applyModuleOpacity(pv);
+                }
+            },
+            _applyModuleOpacity: function(pv) {
+                var v_matches = {};
+                var e_matches = {};
+                var c, v, att, isModule;
+                for (var i = 0; i < pv.$.networkViewer.vertices.length; i++) {
+                    v = pv.$.networkViewer.vertices[i];
+                    att = v.attributes;
+                    isModule = false;
+                    for (var j = 0; j < pv.circuits.length; j++) {
+                        c = pv.circuits[j];
+                        if (att[c.id] == "1") {
+                            isModule = true;
+                            break;
+                        }
+                    }
+                    v_matches[v.attributes.label] = (isModule) ? 1 : 0.3;
+                }
+                for (var i = 0; i < pv.$.networkViewer.edges.length; i++) {
+                    e = pv.$.networkViewer.edges[i];
+                    att = e.attributes;
+                    isModule = false;
+                    for (var j = 0; j < pv.circuits.length; j++) {
+                        c = pv.circuits[j];
+                        if (att[c.id] == "1") {
+                            isModule = true;
+                            break;
+                        }
+                    }
+                    e_matches[e.attributes.label] = (isModule) ? 1 : 0.3;
+                }
+
+                pv.$.networkViewer.$.nodeRender.applyVisualSet({
+                    attribute: 'label',
+                    displayProperty: 'opacity',
+                    type: "discrete",
+                    matches: v_matches,
+                    points: [],
+                    parse: "string",
+                    enabled: true
+                });
+                pv.$.networkViewer.$.edgeRender.applyVisualSet({
+                    attribute: 'label',
+                    displayProperty: 'opacity',
+                    type: "discrete",
+                    matches: e_matches,
+                    points: [],
+                    parse: "string",
+                    enabled: true
+                });
+            },
+            handleSelectCircuit: function(e) {
+                if (e.target.tagName == 'PATHWAY-VIEWER') {
+                    var pv = e.target;
+                    if (pv.selectedCircuit == null) {
+                        this._applyModuleOpacity(pv);
+                    }
+                }
+                if (e.target.tagName == 'PATHWAY-DRUG-VIEWER') {
+                    var pdv = e.target;
+                    var pv = pdv.$.pathwayViewer;
+                    if (pv.selectedCircuit == null) {
+                        this._applyModuleOpacity(pv);
+                    }
+                }
+            },
+            hideContext: function() {
+                this.$.context.setAttribute('hidden', '');
+                this.$.context.innerHTML = '';
             }
         });
     </script>

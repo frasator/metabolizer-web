@@ -67,6 +67,15 @@
         .button:hover {
             background-color: var(--light-button-color);
         }
+
+        .stat-box {
+            box-sizing: border-box;
+            border: 1px solid var(--divider-color);
+            padding: 5px;
+            height: 150px;
+            width: 300px;
+            overflow-y: auto;
+        }
     </style>
     <template>
         <form id="form" class="">
@@ -83,22 +92,49 @@
                 <div class="container">
                     <stv-file-origin id="exp_file" selection-mode="file" bioformats="{{matrixBioformat}}" user-data="{{userData}}" on-ok-click="checkExpFile">
                     </stv-file-origin>
-
+                    <div hidden$="{{!checkSampleCount(expFileSampleCount)}}">Sample count: {{expFileSampleCount}}</div>
                 </div>
             </stv-form-box>
 
             <!-- DESIGN DATA -->
-            <stv-form-box>
+            <stv-form-box disabled$="{{checkSampleCount2(expFileSampleCount)}}">
                 <div class="header">
                     Design data
                 </div>
-                <div class="container">
+                <div class="container vertical layout flex">
+                    <div class="stv-note stv-note-info" style="margin-left:10px;">
+                        Design file must be provided only if you have more than 10 samples per condition.
+                    </div>
+                    <br>
                     <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
                     </stv-file-origin>
-
-                    <div style="padding:5px 0 0 5px;">
-                        <label class="stv">Expression matrix file samples:</label>
-                        <stv-select-box id="sampleSelect" options="{{inputSamples}}" title-attribute="text" enable-filter></stv-select-box>
+                    <div class="horizontal layout">
+                        <div>
+                            <div style="padding:5px 0 0 5px;">
+                                <label class="stv">Expression matrix file samples:</label>
+                                <stv-select-box id="sampleSelect" options="{{inputSamples}}" title-attribute="text" enable-filter></stv-select-box>
+                            </div>
+                        </div>
+                        <div hidden$="{{isStatsHidden(inputSamples)}}" style="margin-left:20px;padding:5px 0 0 5px;">
+                            <label class="stv">Expression matrix file stats:</label>
+                            <br>
+                            <div class="stat-box">
+                                <label class="stv">Total samples count :</label> {{inputSamples.length}}
+                                <template is="dom-repeat" items="{{designConditions}}" as="cond">
+                                    <br>
+                                    <label class="stv">{{cond.name}} :</label> {{cond.count}} &nbsp; - &nbsp; {{cond.percent}}%
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    <div hidden$="{{isStatsHidden(inputSamples)}}" style="margin:10px; 0 0 10px;">
+                        <div class="stv-note stv-note-warn" hidden$="{{!isStatsCountLow(inputSamples,designConditions)}}">
+                            Samples count is not enough, please provide 10 or more samples per condition.
+                        </div>
+                        <div class="stv-note stv-note-warn" hidden$="{{isStatsPercentBalanced(inputSamples,designConditions)}}">
+                            Samples % are unbalanced, between conditions maximum sample size difference might be 25%.
+                            <br> These criteria prevent unbiased learning.
+                        </div>
                     </div>
                 </div>
             </stv-form-box>
@@ -140,6 +176,23 @@
                 </div>
             </stv-form-box>
 
+            <!-- Auto KNOCKOUT -->
+            <stv-form-box disabled$="{{checkAutoKnockout(expFileSampleCount,inputSamples,designConditions)}}">
+                <div class="header">
+                    Auto Knockout
+                </div>
+                <div class="container">
+                    <label class="stv-control">
+                        <input id="autoCheckbox" type="checkbox" name="auto" on-change="handleAutoknockChange">
+                        <span>Enable auto knockout genes</span>
+                    </label>
+                    <div id="autoNote" class="stv-note stv-note-warn" hidden>
+                        Enabling this option will increase job execution, this is because all genes will be knockout one by one.
+                    </div>
+                </div>
+            </stv-form-box>
+
+
             <stv-form-box>
                 <div class="header">
                     Job information
@@ -171,6 +224,16 @@
                 designConditions: {
                     type: Array
                 },
+                expFileSampleCount: {
+                    type: Number,
+                    value: -1
+                },
+                inputSamples: {
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
+                },
                 matrixBioformat: {
                     type: Array,
                     value: [BIOFORMATS["DATAMATRIX_EXPRESSION"]]
@@ -178,7 +241,18 @@
                 designBioformat: {
                     type: Array,
                     value: [BIOFORMATS["EXPERIMENTAL_DESIGN"]]
+                },
+                designStats: {
+                    type: Object
                 }
+            },
+            checkDesignFile: function(e) {
+                var file = e.currentTarget.selectedFile;
+                this._getSamplesFromDesignFile(file._id);
+            },
+            checkExpFile: function(e) {
+                var file = e.currentTarget.selectedFile;
+                this._checkSamplesFromExpFile(file._id);
             },
             clean: function() {
                 this.clearAllErrors();
@@ -190,12 +264,39 @@
                 this.set('inputSamples', []);
                 this.$.sampleSelect.selected = null;
                 this.$.form.elements['species'].value = 'hsa';
+                this.$.autoCheckbox.checked = false;
+                this.set('expFileSampleCount', -1);
+                this.set('designConditions', []);
+                this.set('designStats', {});
+            },
+            _checkSamplesFromExpFile: function(fileId) {
+                var me = this;
+                SteviaManager.files.content({
+                    id: fileId,
+                    query: {
+                        start: 0,
+                        limit: 1
+                    },
+                    request: {
+                        success: function(content, req) {
+                            var line, fields, field, sample, condition;
+                            var lines = content.split('\n');
+                            if (lines.length > 0) {
+                                line = lines[0];
+                                if (line != '') {
+                                    fields = line.split('\t');
+                                    me.set('expFileSampleCount', fields.length - 1);
+                                }
+                            }
+                        }
+                    }
+                });
             },
             _getSamplesFromDesignFile: function(fileId) {
                 var me = this;
                 SteviaManager.getFileContent(fileId, function(content) {
-                    var conditionArray = [];
-                    var line, fields, field;
+                    var sampleArray = [];
+                    var line, fields, field, sample, condition;
                     var lines = content.split('\n');
                     var isNumber;
                     if (lines.length > 0) {
@@ -203,14 +304,34 @@
                             line = lines[i];
                             if (line != '') {
                                 fields = line.split('\t');
-                                conditionArray.push({
-                                    text: fields[0] + ' - ' + fields[1],
-                                    sample: fields[0],
+                                sample = fields[0].trim();
+                                condition = fields[1].trim();
+                                sampleArray.push({
+                                    text: sample + ' - ' + condition,
+                                    sample: sample,
+                                    condition: condition
                                 });
                             }
                         }
                     }
-                    me.set('inputSamples', conditionArray);
+                    me.set('inputSamples', sampleArray);
+                    var conditionMap = {};
+                    var conditionArray = [];
+                    var slength = sampleArray.length;
+                    for (var i = 0; i < slength; i++) {
+                        var s = sampleArray[i];
+                        if (conditionMap[s.condition] == null) {
+                            conditionMap[s.condition] = {
+                                name: s.condition,
+                                count: 0,
+                                percent: 0
+                            };
+                            conditionArray.push(conditionMap[s.condition]);
+                        }
+                        conditionMap[s.condition].count++;
+                        conditionMap[s.condition].percent = conditionMap[s.condition].count / slength * 100;
+                    }
+                    me.set('designConditions', conditionArray);
                 });
             },
             launchJob: function() {
@@ -244,21 +365,61 @@
                         value: this.$.exp_file.selectedFile._id
                     };
                 }
+
+                if (this.expFileSampleCount == 1) {
+                    //nothing
+                } else {
+                    if (this.$.design_file.selectedFile == null) {
+                        this.setError(this.$.design_file, 'No design file selected');
+                    } else {
+                        args.options['design_file'] = {
+                            type: 'file',
+                            mode: 'id',
+                            value: this.$.design_file.selectedFile._id
+                        };
+                    }
+                }
+
                 args.options['species'] = {
                     type: 'text',
                     value: this.$.form.elements['species'].value
                 };
 
-                if (this.$.sampleSelect.selected == null) {
-                    this.setError(this.$.sampleSelect, 'No sample selected.');
-                } else {
-                    args.options['sample'] = {
+                if (this.$.autoCheckbox.checked == true) {
+                    args.options['auto'] = {
                         type: 'text',
-                        value: this.$.sampleSelect.selected.sample
-                    };
+                        value: 'T'
+                    }
                 }
+
+                if (this.expFileSampleCount == 1) {
+                    //nothing
+                } else {
+                    if (this.$.sampleSelect.selected == null) {
+                        this.setError(this.$.sampleSelect, 'No sample selected.');
+                    } else {
+                        args.options['sample'] = {
+                            type: 'text',
+                            value: this.$.sampleSelect.selected.sample
+                        };
+                    }
+                }
+
+                if (
+                    this.expFileSampleCount <= 1 ||
+                    !this.isStatsPercentBalanced(this.inputSamples, this.designConditions) ||
+                    this.isStatsCountLow(this.inputSamples, this.designConditions)
+                ) {
+                    args.options['simple'] = {
+                        type: 'text',
+                        value: 'T'
+                    };
+                    delete args.options.auto;
+                }
+
                 if (this.hasErrors == false && this.$.form.checkValidity()) {
-                    console.log('Launching');
+                    // console.log('Launching');
+                    // console.log(args.options);
                     // return;
                     me._createJob(query, args);
                 }
@@ -291,6 +452,68 @@
                         }
                     }
                 });
+            },
+            isStatsHidden: function(inputSamples) {
+                if (inputSamples && inputSamples.length > 0) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            isStatsCountLow: function(inputSamples, designConditions) {
+                if (inputSamples.length == 0) {
+                    return false;
+                }
+                if (inputSamples && inputSamples.length > 10) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            isStatsPercentBalanced: function(inputSamples, designConditions) {
+                var max;
+                var min;
+                for (var i = 0; i < designConditions.length; i++) {
+                    var dc = designConditions[i];
+                    if (max == null) {
+                        max = dc.percent
+                    }
+                    if (min == null) {
+                        min = dc.percent
+                    }
+                    if (dc.percent < min) {
+                        min = dc.percent;
+                    }
+                    if (dc.percent > max) {
+                        max = dc.percent;
+                    }
+                }
+                var diff = max - min;
+                if (isNaN(diff)) {
+                    return true;
+                }
+                if (diff > 25) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            checkSampleCount: function(count) {
+                return count > -1;
+            },
+            checkSampleCount2: function(count) {
+                return count == 1;
+            },
+            checkAutoKnockout: function(count, inputSamples, designConditions) {
+                if (
+                    count == 1 ||
+                    !this.isStatsPercentBalanced(inputSamples, designConditions) ||
+                    this.isStatsCountLow(this.inputSamples, this.designConditions)
+                ) {
+                    return true;
+                } else {
+                    return false;
+                }
             },
             // handleLoadExample: function() {
             //     var me = this;
@@ -325,10 +548,6 @@
             //     };
             //     this._createJob(query, args);
             // },
-            checkDesignFile: function(e) {
-                var file = e.currentTarget.selectedFile;
-                this._getSamplesFromDesignFile(file._id);
-            }
         });
     </script>
 </dom-module>
