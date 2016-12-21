@@ -215,22 +215,33 @@
             <stv-dropdown dark class="helpmenu">
                 <div data-button><i class="fa fa-question-circle"></i></div>
                 <ul data-menu>
-                    <a href="" target="_blank">
+                    <a href="http://metabolizer.babelomics.org/doc/doku.php" target="_blank">
                         <li>
                             <i class="fa fa-book"></i> &nbsp; Documentation
                         </li>
                     </a>
-                    <li on-mousedown="handleExample">
-                        <i class="fa fa-lightbulb-o"></i> &nbsp; Run example
+                    <li data-divider>
                     </li>
-                    <li on-mousedown="handleFeedback">
+                    <li on-mousedown="handleExample" data-example-name="activity">
+                        <i class="fa fa-lightbulb-o"></i> &nbsp; Activity example
+                    </li>
+                    <li on-mousedown="handleExample" data-example-name="knockout">
+                        <i class="fa fa-lightbulb-o"></i> &nbsp; Knockout example
+                    </li>
+                    <li on-mousedown="handleExample" data-example-name="train">
+                        <i class="fa fa-lightbulb-o"></i> &nbsp; Train example
+                    </li>
+                    <li on-mousedown="handleExample" data-example-name="test">
+                        <i class="fa fa-lightbulb-o"></i> &nbsp; Test example
+                    </li>
+                    <!-- <li on-mousedown="handleFeedback">
                         <i class="fa fa-envelope-o" aria-hidden="true"></i> &nbsp; Send an email
                     </li>
                     <a href="http://gitlab.bioinfo.cipf.es/stevia/stevia-elements/issues" target="_blank">
                         <li>
                             <i class="fa fa-exclamation-circle" aria-hidden="true"></i> &nbsp; Go to git issue
                         </li>
-                    </a>
+                    </a> -->
                 </ul>
             </stv-dropdown>
         </stv-header>
@@ -257,7 +268,8 @@
                             'metabolizer.module-knockout-init',
                             'metabolizer.module-prediction-train',
                             'metabolizer.module-prediction-test',
-                            'utils.report'
+                            'utils.report',
+                            'utils.example'
                         ];
                     }
                 },
@@ -341,11 +353,60 @@
                     this.$.report.set('job', job);
                 }
             },
-            handleLogin: function() {
-                if (Cookies('bioinfo_user').indexOf("anonymous___") != -1) {
-                    this.setMenu('module-activity');
+            handleExample: function(e) {
+                if (this.$.stvHeader.isLogged != true) {
+                    this._lastExampleRequest = e.currentTarget.dataset['exampleName'];;
+                    this.$.stvHeader.anonymousSign();
                 } else {
-                    this.setMenu('home');
+                    this.runExample(e.currentTarget.dataset['exampleName']);
+                    this.$.jobBrowserPanel.show();
+                }
+            },
+            runExample: function(ex) {
+                var me = this;
+                var folderName;
+                switch (ex) {
+                    case 'activity':
+                        folderName = 'Module_activity_BRCA-1';
+                        break;
+                    case 'knockout':
+                        folderName = 'Module_knockout_Auto_KO_BRCA';
+                        break;
+                    case 'train':
+                        folderName = 'SVM_BRCA_Train';
+                        break;
+                    case 'test':
+                        folderName = 'SVM_BRCA_Test';
+                        break;
+                    default:
+                }
+                SteviaManager.jobs.example({
+                    query: {
+                        folderName: folderName,
+                        tool: 'metabolizer',
+                        execution: 'example'
+                    },
+                    request: {
+                        method: 'GET',
+                        success: function(response) {
+                            me.$.jobBrowserPanel.show();
+                        },
+                        error: function(response) {
+
+                        }
+                    }
+                });
+            },
+            handleLogin: function() {
+                if (this._lastExampleRequest) {
+                    this.runExample(this._lastExampleRequest);
+                    this._lastExampleRequest = null;
+                } else {
+                    if (Cookies('bioinfo_user').indexOf("anonymous___") != -1) {
+                        this.setMenu('module-activity');
+                    } else {
+                        this.setMenu('home');
+                    }
                 }
                 this.$.home.isLogged = true;
             },

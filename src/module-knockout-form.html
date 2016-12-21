@@ -104,10 +104,6 @@
                     Design data
                 </div>
                 <div class="container vertical layout flex">
-                    <div class="stv-note stv-note-info" style="margin-left:10px;">
-                        Design file must be provided only if you have more than 10 samples per condition.
-                    </div>
-                    <br>
                     <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
                     </stv-file-origin>
                     <div class="horizontal layout">
@@ -134,7 +130,8 @@
                             Number of samples is not enough, please provide 10 or more samples per condition.
                         </div>
                         <div class="stv-note stv-note-warn" hidden$="{{isStatsPercentBalanced(inputSamples,designConditions)}}">
-                            Samples % are unbalanced, between conditions maximum sample size difference might be 25%.
+                            Sample sizes between conditions are imbalanced. etween conditions maximum %25 sample size difference is allowed.
+                            <br> Imbalanced dataset can produce suboptimal models which are biased.
                             <br> These criteria prevent unbiased learning.
                         </div>
                     </div>
@@ -224,7 +221,10 @@
             behaviors: [StvFormBehaviour],
             properties: {
                 designConditions: {
-                    type: Array
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
                 },
                 expFileSampleCount: {
                     type: Number,

@@ -190,6 +190,20 @@
                     value: [BIOFORMATS["EXPERIMENTAL_DESIGN"]]
                 }
             },
+            clean:function(){
+                this.clearAllErrors();
+                this.$.jobName.value = "Module activity";
+                this.$.jobDescription.value = "";
+                this.$.exp_file.reset();
+                this.$.design_file.reset();
+                this.$.output_folder.reset();
+
+                this.set('designConditions', []);
+                this.$.condition1Select.selectedOptionText = '';
+                this.$.condition2Select.selectedOptionText = '';
+
+                this.$.form.elements['species'].value = 'hsa';
+            },
             checkDesignFile: function(e) {
                 var file = e.currentTarget.selectedFile;
                 this._getConditionsFromDesignFile(file._id);
@@ -307,7 +321,6 @@
 
                 console.log(query);
                 console.log(args);
-                debugger
                 if (this.hasErrors == false && this.$.form.checkValidity()) {
                     console.log('Launching');
                     // return;
