@@ -27,12 +27,12 @@
 <link rel="import" href="bower_components/stevia-elements/src/report/stv-report.html">
 
 
-<link rel="import" href="src/midas-home.html">
+<link rel="import" href="src/metabolizer-home.html">
 <link rel="import" href="src/module-activity-form.html">
 <link rel="import" href="src/module-knockout-form.html">
 <link rel="import" href="src/module-prediction-form.html">
 
-<dom-module id="midas-element">
+<dom-module id="metabolizer-element">
     <style is="custom-style" include="iron-flex iron-flex-reverse iron-flex-alignment iron-flex-factors iron-positioning">
          :host {
             display: block;
@@ -102,7 +102,7 @@
             font-weight: normal;
         }
 
-        midas-home {
+        metabolizer-home {
             height: calc(100vh - 160px);
             overflow-y: auto;
         }
@@ -129,7 +129,7 @@
     <template>
 
         <div class="content" menu-option="home">
-            <midas-home id="home" on-start="handleHomeStart" isLogged="{{isLogged}}"></midas-home>
+            <metabolizer-home id="home" on-start="handleHomeStart" isLogged="{{isLogged}}"></metabolizer-home>
         </div>
         <div class="content" menu-option="module-activity">
             <module-activity-form id="moduleActivity" bioformats="{{bioformats}}" user-data="{{userData}}" on-job-launched="handleJobLaunched"></module-activity-form>
@@ -165,7 +165,7 @@
 
         <stv-header id="stvHeader" hide-jobs hide-browse selected-option="{{selectedOption}}" user-data="{{userData}}" on-login="handleLogin" on-logout="handleLogout">
             <div class="icon">
-                <img src="images/Leaf_icon_03.svg" style="height: 54px;margin: 8px 3px 0 0;">
+                <!-- <img src="images/Leaf_icon_03.svg" style="height: 54px;margin: 8px 3px 0 0;"> -->
             </div>
             <div class="title horizontal layout center" style="margin-left:15px;">
                 <span style="font-weight:normal;">Metabolizer</span>
@@ -236,7 +236,7 @@
         </stv-header>
 
         <stv-footer menu-option="home,login,signup,profile,remember">
-            Midas
+            Metabolizer
             <br> Created by
             <span style="font-weight:bold;">Computational Genomics Department</span>
             <br> Principe Felipe Research Center, Valencia, Spain
@@ -246,13 +246,19 @@
 
     <script>
         Polymer({
-            is: "midas-element",
+            is: "metabolizer-element",
             behaviors: [StvApplicationBehavior],
             properties: {
                 allowedTools: {
                     type: Array,
                     value: function() {
-                        return ['*'];
+                        return [
+                            'metabolizer.module-activity',
+                            'metabolizer.module-knockout-init',
+                            'metabolizer.module-prediction-train',
+                            'metabolizer.module-prediction-test',
+                            'utils.report'
+                        ];
                     }
                 },
                 bioformats: {
@@ -260,6 +266,14 @@
                     notify: true,
                     value: [BIOFORMATS["DATAMATRIX_EXPRESSION"], BIOFORMATS["VARIANT"], BIOFORMATS["EXPERIMENTAL_DESIGN"]]
                 },
+                drugActionList: {
+                    type: Array,
+                    notify: true
+                },
+                drugActionMap: {
+                    type: Object,
+                    notify: true
+                }
             },
             listeners: {
                 'open-job-folder': 'handleOpenJobFolder'
@@ -310,7 +324,7 @@
                 });
             },
             handleJobLaunched: function() {
-
+                this.$.jobBrowserPanel.show();
             },
             handleOpenJobFolder: function(e) {
                 var job = e.detail;

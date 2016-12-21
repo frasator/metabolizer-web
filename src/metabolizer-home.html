@@ -1,6 +1,6 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
-<dom-module id="midas-home">
+<dom-module id="metabolizer-home">
     <style is="custom-style" include="iron-flex iron-flex-reverse iron-flex-alignment iron-flex-factors iron-positioning">
          :host {
             display: block;
@@ -102,7 +102,7 @@
         <div id="main">
             <div class="horizontal layout center-justified center">
                 <div>
-                    <img id="image" src="../images/Leaf_icon_03.svg">
+                    <!-- <img id="image" src="../images/Leaf_icon_03.svg"> -->
                 </div>
                 <div class="vertical layout center">
                     <div class="application vertical layout center">
@@ -122,7 +122,7 @@
 
             <!-- <div class="title">Overview:</div> -->
             <div class="paragraph">
-                This is the Midas page.
+                This is the Metabolizer page.
             </div>
 
             <div class="title2">Note:</div>
@@ -135,7 +135,7 @@
     </template>
     <script>
         Polymer({
-            is: 'midas-home',
+            is: 'metabolizer-home',
             handleStart: function() {
                 this.fire('start');
             }

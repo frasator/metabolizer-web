@@ -195,7 +195,7 @@
                 this._getConditionsFromDesignFile(file._id);
             },
             checkExpFile: function(e) {
-                
+
             },
             _getConditionsFromDesignFile: function(fileId) {
                 var me = this;
@@ -239,7 +239,7 @@
                 }
 
                 var args = {
-                    tool: 'midas',
+                    tool: 'metabolizer',
                     execution: 'module-activity',
                     executable: 'module-activity.sh',
                     options: {
@@ -307,6 +307,7 @@
 
                 console.log(query);
                 console.log(args);
+                debugger
                 if (this.hasErrors == false && this.$.form.checkValidity()) {
                     console.log('Launching');
                     // return;
@@ -321,10 +322,12 @@
                             success: function(response) {
                                 if (response.response[0].error == null) {
                                     console.log(response);
+                                    me.clean();
+                                    me.fire('job-launched');
+                                    me.fire('need-refresh');
                                 } else {
                                     console.log(response.response[0].error);
                                 }
-                                me.fire('need-refresh');
                             },
                             error: function() {
                                 console.log('Server error, try again later.');

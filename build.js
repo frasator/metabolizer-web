@@ -6,8 +6,8 @@ const path = require('path');
 const shell = require('shelljs');
 const fs = require('fs');
 
-var name = "midas";
-var element = "midas-element";
+var name = "metabolizer";
+var element = "metabolizer-element";
 
 // Default
 var bp = path.join(__dirname, "build");

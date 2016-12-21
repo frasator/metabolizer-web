@@ -92,7 +92,9 @@
                 <div class="container">
                     <stv-file-origin id="exp_file" selection-mode="file" bioformats="{{matrixBioformat}}" user-data="{{userData}}" on-ok-click="checkExpFile">
                     </stv-file-origin>
-                    <div hidden$="{{!checkSampleCount(expFileSampleCount)}}">Sample count: {{expFileSampleCount}}</div>
+                    <div hidden$="{{!checkSampleCount(expFileSampleCount)}}">
+                        Number of samples: <span style="font-size:1.1em;">{{expFileSampleCount}}</span>
+                    </div>
                 </div>
             </stv-form-box>
 
@@ -119,17 +121,17 @@
                             <label class="stv">Expression matrix file stats:</label>
                             <br>
                             <div class="stat-box">
-                                <label class="stv">Total samples count :</label> {{inputSamples.length}}
+                                <label class="stv">Number of samples:</label> {{inputSamples.length}}
                                 <template is="dom-repeat" items="{{designConditions}}" as="cond">
                                     <br>
-                                    <label class="stv">{{cond.name}} :</label> {{cond.count}} &nbsp; - &nbsp; {{cond.percent}}%
+                                    <label class="stv">{{cond.name}}:</label> {{cond.count}} &nbsp; - &nbsp; {{cond.percent}}%
                                 </template>
                             </div>
                         </div>
                     </div>
                     <div hidden$="{{isStatsHidden(inputSamples)}}" style="margin:10px; 0 0 10px;">
                         <div class="stv-note stv-note-warn" hidden$="{{!isStatsCountLow(inputSamples,designConditions)}}">
-                            Samples count is not enough, please provide 10 or more samples per condition.
+                            Number of samples is not enough, please provide 10 or more samples per condition.
                         </div>
                         <div class="stv-note stv-note-warn" hidden$="{{isStatsPercentBalanced(inputSamples,designConditions)}}">
                             Samples % are unbalanced, between conditions maximum sample size difference might be 25%.
@@ -346,7 +348,7 @@
                     query.outdirId = this.$.output_folder.selectedFile._id;
                 }
                 var args = {
-                    tool: 'midas',
+                    tool: 'metabolizer',
                     execution: 'module-knockout-init',
                     executable: 'module-knockout-init.sh',
                     options: {

@@ -1,11 +1,11 @@
 {
-    "name": "midas-web",
-    "version": "0.1.0",
+    "name": "metabolizer",
+    "version": "1.0.1",
     "homepage": "",
     "authors": [
-        "user <user@domain.com>"
+        "Francisco Salavert Torres <frasator@gmail.com>"
     ],
-    "license": "GPLv2",
+    "license": "GPLv3",
     "private": true,
     "ignore": [
         "**/.*",

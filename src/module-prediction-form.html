@@ -252,7 +252,7 @@
                 },
                 predictionAllowedTool: {
                     type: Array,
-                    value: ['midas.module-prediction-train']
+                    value: ['metabolizer.module-prediction-train']
                 },
                 designConditions: {
                     type: Array
@@ -391,7 +391,7 @@
                 }
 
                 var args = {
-                    tool: 'midas',
+                    tool: 'metabolizer',
                     execution: 'module-prediction-' + this.type,
                     executable: 'module-prediction-' + this.type + '.sh',
                     options: {
@@ -472,6 +472,7 @@
                                 // console.log(job);
                                 me.clean();
                                 me.fire('job-launched');
+                                me.fire('need-refresh');
                                 //                                    me.message = job.commandLine;
                             } else {
                                 me.message = response.response[0].errorMsg;
