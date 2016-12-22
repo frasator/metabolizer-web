@@ -86,6 +86,15 @@
             overflow-y: auto;
             padding: 5px;
         }
+
+        .stat-box {
+            box-sizing: border-box;
+            border: 1px solid var(--divider-color);
+            padding: 5px;
+            height: 150px;
+            width: 300px;
+            overflow-y: auto;
+        }
     </style>
     <template>
         <form id="form" class="">
@@ -150,10 +159,32 @@
                     <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
                     </stv-file-origin>
 
-                    <div style="padding:5px 0 0 5px;">
+                    <label class="stv">Expression matrix file stats:</label>
+                    <br>
+                    <div class="stat-box">
+                        <div hidden$="{{isEqual(inputSamples.length,0)}}">
+                            <label class="stv">Number of samples:</label> {{inputSamples.length}}
+                        </div>
+                        <template is="dom-repeat" items="{{designConditions}}" as="cond">
+                            <label class="stv">{{cond.name}}:</label> {{cond.count}} &nbsp; - &nbsp; {{cond.percent}}%
+                            <br>
+                        </template>
+                    </div>
+
+                    <!-- <div style="padding:5px 0 0 5px;">
                         <label class="stv">Detected classes:</label>
                         <stv-select-box options="{{designConditions}}" title-attribute="name" disable-selection>
                         </stv-select-box>
+                    </div> -->
+                    <div hidden$="{{isStatsHidden(inputSamples)}}" style="margin:10px; 0 0 10px;">
+                        <div class="stv-note stv-note-warn" hidden$="{{!isStatsCountLow(inputSamples,designConditions)}}">
+                            Number of samples is not enough, please provide 10 or more samples per condition.
+                        </div>
+                        <div class="stv-note stv-note-warn" hidden$="{{isStatsPercentBalanced(inputSamples,designConditions)}}">
+                            Sample sizes between conditions are imbalanced. Between conditions maximum %25 sample size difference is allowed.
+                            <br> Imbalanced dataset can produce suboptimal models which are biased.
+                            <br> These criteria prevent unbiased learning.
+                        </div>
                     </div>
                 </div>
             </stv-form-box>
@@ -173,10 +204,10 @@
                         <input type="radio" name="train_method" value="SVM">
                         <span>Support Vector Machines</span>
                     </label>
-                    <label class="stv-control">
+                    <!-- <label class="stv-control">
                         <input type="radio" name="train_method" value="LDA">
                         <span>Linear Discriminant Analysis</span>
-                    </label>
+                    </label> -->
                 </div>
             </stv-form-box>
 
@@ -255,7 +286,16 @@
                     value: ['metabolizer.module-prediction-train']
                 },
                 designConditions: {
-                    type: Array
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
+                },
+                inputSamples: {
+                    type: Array,
+                    value: function() {
+                        return []
+                    }
                 },
                 modelJob: {
                     type: Object
@@ -347,7 +387,8 @@
             },
             checkDesignFile: function(e) {
                 var file = e.currentTarget.selectedFile;
-                this._getConditionsFromDesignFile(file._id);
+                // this._getConditionsFromDesignFile(file._id);
+                this._getSamplesFromDesignFile(file._id);
             },
             _getConditionsFromDesignFile: function(fileId) {
                 var me = this;
@@ -370,6 +411,48 @@
                                 }
                             }
                         }
+                    }
+                    me.set('designConditions', conditionArray);
+                });
+            },
+            _getSamplesFromDesignFile: function(fileId) {
+                var me = this;
+                SteviaManager.getFileContent(fileId, function(content) {
+                    var sampleArray = [];
+                    var line, fields, field, sample, condition;
+                    var lines = content.split('\n');
+                    var isNumber;
+                    if (lines.length > 0) {
+                        for (var i = 0; i < lines.length; i++) {
+                            line = lines[i];
+                            if (line != '') {
+                                fields = line.split('\t');
+                                sample = fields[0].trim();
+                                condition = fields[1].trim();
+                                sampleArray.push({
+                                    text: sample + ' - ' + condition,
+                                    sample: sample,
+                                    condition: condition
+                                });
+                            }
+                        }
+                    }
+                    me.set('inputSamples', sampleArray);
+                    var conditionMap = {};
+                    var conditionArray = [];
+                    var slength = sampleArray.length;
+                    for (var i = 0; i < slength; i++) {
+                        var s = sampleArray[i];
+                        if (conditionMap[s.condition] == null) {
+                            conditionMap[s.condition] = {
+                                name: s.condition,
+                                count: 0,
+                                percent: 0
+                            };
+                            conditionArray.push(conditionMap[s.condition]);
+                        }
+                        conditionMap[s.condition].count++;
+                        conditionMap[s.condition].percent = conditionMap[s.condition].count / slength * 100;
                     }
                     me.set('designConditions', conditionArray);
                 });
@@ -483,7 +566,52 @@
                         }
                     }
                 });
-            }
+            },
+            isStatsHidden: function(inputSamples) {
+                if (inputSamples && inputSamples.length > 0) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            isStatsCountLow: function(inputSamples, designConditions) {
+                if (inputSamples.length == 0) {
+                    return false;
+                }
+                if (inputSamples && inputSamples.length > 10) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
+            isStatsPercentBalanced: function(inputSamples, designConditions) {
+                var max;
+                var min;
+                for (var i = 0; i < designConditions.length; i++) {
+                    var dc = designConditions[i];
+                    if (max == null) {
+                        max = dc.percent
+                    }
+                    if (min == null) {
+                        min = dc.percent
+                    }
+                    if (dc.percent < min) {
+                        min = dc.percent;
+                    }
+                    if (dc.percent > max) {
+                        max = dc.percent;
+                    }
+                }
+                var diff = max - min;
+                if (isNaN(diff)) {
+                    return true;
+                }
+                if (diff > 25) {
+                    return false;
+                } else {
+                    return true;
+                }
+            },
         });
     </script>
 </dom-module>
