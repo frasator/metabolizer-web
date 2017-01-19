@@ -15,8 +15,8 @@
         "tests"
     ],
     "dependencies": {
-        "stevia-elements": "https://github.com/babelomics/stevia-elements.git#master",
-        "network-viewer": "https://github.com/babelomics/network-viewer.git#master",
-        "pathway-viewer": "http://github.com/babelomics/pathway-viewer.git#master"
+        "stevia-elements": "https://github.com/fsalavert/stevia-elements.git#master",
+        "network-viewer": "https://github.com/fsalavert/network-viewer.git#master",
+        "pathway-viewer": "http://github.com/fsalavert/pathway-viewer.git#master"
     }
 }
