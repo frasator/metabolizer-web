@@ -57,7 +57,7 @@
         .content {
             position: absolute;
             width: 100%;
-            top: 60px;
+            top: 50px;
             /*height: calc(100vh - 60px);*/
             /*background-color: transparent;*/
         }
@@ -103,7 +103,7 @@
         }
 
         metabolizer-home {
-            height: calc(100vh - 160px);
+            height: calc(100vh - 100px);
             overflow-y: auto;
         }
 
@@ -111,7 +111,7 @@
         module-knockout-form,
         module-prediction-form,
         stv-report {
-            height: calc(100vh - 60px);
+            height: calc(100vh - 50px);
             overflow-y: auto;
         }
 
@@ -246,12 +246,10 @@
             </stv-dropdown>
         </stv-header>
 
-        <stv-footer menu-option="home,login,signup,profile,remember">
-            Metabolizer
-            <br> Created by
-            <span style="font-weight:bold;">Computational Genomics Department</span>
-            <br> Principe Felipe Research Center, Valencia, Spain
-            <br> 2016
+        <stv-footer menu-option="home,login,signup,profile,remember" class="horizontal layout center center-justified" style="padding:0 20px;">
+            <div style="text-align:center;">
+                Metabolizer by <span style="font-weight:bold;">Computational Genomics Department</span>
+                <br> Principe Felipe Research Center, Valencia, Spain 2017</div>
         </stv-footer>
     </template>
 
