@@ -1,12 +1,5 @@
 {
-    "name": "metabolizer",
-    "version": "1.0.1",
-    "homepage": "",
-    "authors": [
-        "Francisco Salavert Torres <frasator@gmail.com>"
-    ],
-    "license": "GPLv3",
-    "private": true,
+    "name": "metabolizer-web",
     "ignore": [
         "**/.*",
         "node_modules",
@@ -19,4 +12,5 @@
         "network-viewer": "https://github.com/frasator/network-viewer.git#master",
         "pathway-viewer": "http://github.com/frasator/pathway-viewer.git#master"
     }
+    "private": true
 }
