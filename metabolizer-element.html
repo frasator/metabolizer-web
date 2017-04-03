@@ -86,8 +86,38 @@
 
         #jobBrowser {}
 
-        @media (max-width: 1100px) {
-            .option-text {
+        @media (max-width: 1460px) {
+            span.description {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1220px) {
+            div.title {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1090px) {
+            div.icon {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 1090px) {
+            stv-header ::content #right .option-text {
+                display: none;
+            }
+        }
+
+        @media (max-width: 800px) {
+            stv-header ::content .option-text {
+                font-size: 0.8em;
+            }
+        }
+
+        @media (max-width: 700px) {
+            stv-header ::content .option-text {
                 display: none;
             }
         }
