@@ -91,21 +91,44 @@
                     Design data
                 </div>
                 <div class="container">
-                    <div>Experimental design file: &nbsp;
-                        <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
-                        </stv-file-origin>
+                    <div class="vertical layout">
+                        <label class="stv-control">
+                            <input type="radio" name="design_type" checked="true" value="categorical" on-click="handleDesignType">
+                            <span>Two group comparison</span>
+                        </label>
+                        <label class="stv-control">
+                            <input type="radio" name="design_type" value="continuous" on-click="handleDesignType">
+                            <span>Correlation with continous variable</span>
+                        </label>
                     </div>
                     <br>
-                    <div class="horizontal layout center" style="padding:5px 0 0 5px;">
-                        <div>
-                            <label class="stv">Condition 1:</label>
-                            <stv-select-box id="condition1Select" options="{{designConditions}}" title-attribute="name">
-                            </stv-select-box>
+                    <div hidden$="{{!_checkValue('continuous', design_type)}}">Experimental design file: &nbsp;
+                        <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
+                        </stv-file-origin>
+                        <br>
+                        <div class="horizontal layout center" style="padding:5px 0 0 5px;">
+                            <div>
+                                <label class="stv">Condition 1:</label>
+                                <stv-select-box id="condition1Select" options="{{designConditions}}" title-attribute="name">
+                                </stv-select-box>
+                            </div>
+                            <div style="margin-left:10px;">
+                                <label class="stv">Condition 2:</label>
+                                <stv-select-box id="condition2Select" options="{{designConditions}}" title-attribute="name">
+                                </stv-select-box>
+                            </div>
                         </div>
-                        <div style="margin-left:10px;">
-                            <label class="stv">Condition 2:</label>
-                            <stv-select-box id="condition2Select" options="{{designConditions}}" title-attribute="name">
-                            </stv-select-box>
+                    </div>
+                    <div hidden$="{{!_checkValue('categorical', design_type)}}"> &nbsp; Correlation method: &nbsp;
+                        <div style="margin-left:15px;">
+                            <label class="stv-control">
+                                <input type="radio" name="methodcor" checked="true" value="spearman">
+                                <span>Spearman</span>
+                            </label>
+                            <label class="stv-control">
+                                <input type="radio" name="methodcor" value="pearson">
+                                <span>Pearson</span>
+                            </label>
                         </div>
                     </div>
                 </div>
@@ -178,6 +201,14 @@
             is: 'module-activity-form',
             behaviors: [StvFormBehaviour],
             properties: {
+                design_type: {
+                    type: String,
+                    value: 'categorical'
+                },
+                methodcor: {
+                    type: String,
+                    value: 'spearman'
+                },
                 designConditions: {
                     type: Array
                 },
@@ -197,6 +228,9 @@
                 this.$.exp_file.reset();
                 this.$.design_file.reset();
                 this.$.output_folder.reset();
+                this.design_type = 'categorical';
+                this.$.form.elements['design_type'].value = 'categorical';
+                this.$.form.elements['methodcor'].value = 'categorical';
 
                 this.set('designConditions', []);
                 this.$.condition1Select.selectedOptionText = '';
@@ -210,6 +244,12 @@
             },
             checkExpFile: function(e) {
 
+            },
+            handleDesignType: function(e) {
+                this.set('design_type', e.currentTarget.value);
+            },
+            _checkValue: function(val, currentVal) {
+                return val !== currentVal;
             },
             _getConditionsFromDesignFile: function(fileId) {
                 var me = this;
@@ -242,6 +282,7 @@
             },
             launchJob: function(e) {
                 var me = this;
+                this.clearAllErrors();
 
                 var query = {
                     sid: Cookies("bioinfo_sid"),
@@ -266,6 +307,14 @@
                 args.options['species'] = {
                     type: 'text',
                     value: this.$.form.elements['species'].value
+                };
+                args.options['design_type'] = {
+                    type: 'text',
+                    value: this.$.form.elements['design_type'].value
+                };
+                args.options['methodcor'] = {
+                    type: 'text',
+                    value: this.$.form.elements['methodcor'].value
                 };
 
                 if (this.$.exp_file.selectedFile == null) {
@@ -310,13 +359,15 @@
                     };
                 }
 
-                if (args.options['cond2'].value != null &&
+                if(args.options['cond2'] != null && args.options['cond1'] != null){
+                    if (args.options['cond2'].value != null &&
                     args.options['cond1'].value != null &&
                     args.options['cond2'].value == args.options['cond1'].value) {
 
-                    this.setError(this.$.condition1Select, 'Condition 2 is the same as condition 1.');
-                } else if (args.options['cond2'].value != null && args.options['cond1'].value != null) {
-                    //
+                        this.setError(this.$.condition1Select, 'Condition 2 is the same as condition 1.');
+                    } else if (args.options['cond2'].value != null && args.options['cond1'].value != null) {
+                        //
+                    }
                 }
 
                 console.log(query);
