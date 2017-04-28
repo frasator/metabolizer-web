@@ -100,12 +100,12 @@
                             <input type="radio" name="design_type" value="continuous" on-click="handleDesignType">
                             <span>Correlation with continous variable</span>
                         </label>
+                        <br>
+                        <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
+                        </stv-file-origin>
                     </div>
                     <br>
                     <div hidden$="{{!_checkValue('continuous', design_type)}}">Experimental design file: &nbsp;
-                        <stv-file-origin id="design_file" selection-mode="file" bioformats="{{designBioformat}}" user-data="{{userData}}" on-ok-click="checkDesignFile">
-                        </stv-file-origin>
-                        <br>
                         <div class="horizontal layout center" style="padding:5px 0 0 5px;">
                             <div>
                                 <label class="stv">Condition 1:</label>
@@ -119,7 +119,14 @@
                             </div>
                         </div>
                     </div>
-                    <div hidden$="{{!_checkValue('categorical', design_type)}}"> &nbsp; Correlation method: &nbsp;
+                    <div hidden$="{{!_checkValue('categorical', design_type)}}">
+                        <div>
+                            <label class="stv">Select variable:</label>
+                            <stv-select-box id="variableSelect" options="{{continuousConditions}}" title-attribute="name">
+                            </stv-select-box>
+                        </div>
+                        <br>
+                        <div> &nbsp; Correlation method: &nbsp;</div>
                         <div style="margin-left:15px;">
                             <label class="stv-control">
                                 <input type="radio" name="methodcor" checked="true" value="spearman">
@@ -212,6 +219,9 @@
                 designConditions: {
                     type: Array
                 },
+                continuousConditions: {
+                    type: Array
+                },
                 matrixBioformat: {
                     type: Array,
                     value: [BIOFORMATS["DATAMATRIX_EXPRESSION"]]
@@ -221,7 +231,7 @@
                     value: [BIOFORMATS["EXPERIMENTAL_DESIGN"]]
                 }
             },
-            clean:function(){
+            clean: function() {
                 this.clearAllErrors();
                 this.$.jobName.value = "Module activity";
                 this.$.jobDescription.value = "";
@@ -233,6 +243,7 @@
                 this.$.form.elements['methodcor'].value = 'categorical';
 
                 this.set('designConditions', []);
+                this.set('continuousConditions', []);
                 this.$.condition1Select.selectedOptionText = '';
                 this.$.condition2Select.selectedOptionText = '';
 
@@ -259,11 +270,22 @@
                     var line, fields, field;
                     var lines = content.split('\n');
                     var isNumber;
+                    var continuousNamesArray = [];
                     if (lines.length > 0) {
                         for (var i = 0; i < lines.length; i++) {
                             line = lines[i];
                             if (line != '') {
                                 fields = line.split('\t');
+                                if(i==0){
+                                    for (var j = 0; j < fields.length; j++) {
+                                        var f = fields[j];
+                                        if(f != ""){
+                                            continuousNamesArray.push({
+                                                name: f
+                                            });
+                                        }
+                                    }
+                                }
                                 if (conditionMap[fields[1]] !== true) {
                                     conditionMap[fields[1]] = true;
                                     conditionArray.push({
@@ -276,6 +298,7 @@
                     me.$.condition1Select.set('selected', null);
                     me.$.condition2Select.set('selected', null);
                     me.set('designConditions', conditionArray);
+                    me.set('continuousConditions', continuousNamesArray);
                     me.$.condition1Select.set('selected', conditionArray[0]);
                     me.$.condition2Select.set('selected', conditionArray[1]);
                 });
@@ -312,6 +335,7 @@
                     type: 'text',
                     value: this.$.form.elements['design_type'].value
                 };
+
                 args.options['methodcor'] = {
                     type: 'text',
                     value: this.$.form.elements['methodcor'].value
@@ -337,44 +361,57 @@
                     };
                 }
 
-                if (this.$.condition1Select.selected == null) {
-                    this.setError(this.$.condition1Select, 'Condition 1 not selected.');
-                } else if (this.$.condition1Select.selected.name.indexOf(' ') != -1) {
-                    this.setError(this.$.condition1Select, 'Spaces are not allowed in conditions.');
-                } else {
-                    args.options['cond1'] = {
-                        type: 'text',
-                        value: this.$.condition1Select.selected.name
-                    };
-                }
+                if(this.design_type == 'categorical'){
+                    if (this.$.condition1Select.selected == null) {
+                        this.setError(this.$.condition1Select, 'Condition 1 is not selected.');
+                    } else if (this.$.condition1Select.selected.name.indexOf(' ') != -1) {
+                        this.setError(this.$.condition1Select, 'Spaces are not allowed in conditions.');
+                    } else {
+                        args.options['cond1'] = {
+                            type: 'text',
+                            value: this.$.condition1Select.selected.name
+                        };
+                    }
 
-                if (this.$.condition2Select.selected == null) {
-                    this.setError(this.$.condition2Select, 'Condition 2 not selected.');
-                } else if (this.$.condition2Select.selected.name.indexOf(' ') != -1) {
-                    this.setError(this.$.condition2Select, 'Spaces are not allowed in conditions.');
-                } else {
-                    args.options['cond2'] = {
-                        type: 'text',
-                        value: this.$.condition2Select.selected.name
-                    };
-                }
+                    if (this.$.condition2Select.selected == null) {
+                        this.setError(this.$.condition2Select, 'Condition 2 is not selected.');
+                    } else if (this.$.condition2Select.selected.name.indexOf(' ') != -1) {
+                        this.setError(this.$.condition2Select, 'Spaces are not allowed in conditions.');
+                    } else {
+                        args.options['cond2'] = {
+                            type: 'text',
+                            value: this.$.condition2Select.selected.name
+                        };
+                    }
 
-                if(args.options['cond2'] != null && args.options['cond1'] != null){
-                    if (args.options['cond2'].value != null &&
-                    args.options['cond1'].value != null &&
-                    args.options['cond2'].value == args.options['cond1'].value) {
+                    if (args.options['cond2'] != null && args.options['cond1'] != null) {
+                        if (args.options['cond2'].value != null &&
+                        args.options['cond1'].value != null &&
+                        args.options['cond2'].value == args.options['cond1'].value) {
 
-                        this.setError(this.$.condition1Select, 'Condition 2 is the same as condition 1.');
-                    } else if (args.options['cond2'].value != null && args.options['cond1'].value != null) {
-                        //
+                            this.setError(this.$.condition1Select, 'Condition 2 is the same as condition 1.');
+                        } else if (args.options['cond2'].value != null && args.options['cond1'].value != null) {
+                            //
+                        }
+                    }
+                }else{
+                    if (this.$.variableSelect.selected == null) {
+                        this.setError(this.$.variableSelect, 'Variable is not selected.');
+                    } else {
+                        args.options['corvar'] = {
+                            type: 'text',
+                            value: this.$.variableSelect.selected.name
+                        };
                     }
                 }
+
+
 
                 console.log(query);
                 console.log(args);
                 if (this.hasErrors == false && this.$.form.checkValidity()) {
                     console.log('Launching');
-                    // return;
+                    return;
                     SteviaManager.jobs.create({
                         query: query,
                         request: {
